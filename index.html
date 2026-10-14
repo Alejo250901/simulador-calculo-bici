@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulador de Carga - Bici Eléctrica</title>
+    <!-- Tailwind CSS para diseño moderno -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js para la gráfica interactiva -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-slate-900 text-slate-100 font-sans min-h-screen p-6">
+    <div class="max-w-4xl mx-auto">
+        <header class="text-center mb-8">
+            <h1 class="text-3xl font-bold text-emerald-400 mb-2">Simulador de Carga y Cuidado de Batería</h1>
+            <p class="text-slate-400">Modelo de Cálculo Integral aplicado a la Micromovilidad Urbana</p>
+        </header>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <!-- Panel de Controles (Sliders) -->
+            <div class="bg-slate-800 p-6 rounded-2xl shadow-xl flex flex-col justify-between">
+                <div>
+                    <h2 class="text-xl font-semibold mb-4 text-emerald-300">Parámetros</h2>
+                    
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium mb-1">Batería Inicial: <span id="socVal" class="font-bold text-emerald-400">30</span>%</label>
+                        <input type="range" id="socInput" min="10" max="90" value="30" class="w-full accent-emerald-500 cursor-pointer">
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium mb-1">Capacidad Total: <span id="capVal" class="font-bold text-emerald-400">400</span> Wh</label>
+                        <input type="range" id="capInput" min="200" max="800" step="50" value="400" class="w-full accent-emerald-500 cursor-pointer">
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium mb-1">Potencia del Cargador: <span id="powVal" class="font-bold text-emerald-400">120</span> W</label>
+                        <input type="range" id="powInput" min="50" max="300" step="10" value="120" class="w-full accent-emerald-500 cursor-pointer">
+                    </div>
+                </div>
+
+                <div class="bg-slate-900 p-4 rounded-xl border border-slate-700 mt-4">
+                    <p class="text-xs text-slate-400">Tiempo Estimado al 100%:</p>
+                    <p id="timeResult" class="text-2xl font-bold text-emerald-400">-- h -- min</p>
+                    <p class="text-xs text-slate-400 mt-2">Energía Total (Integral):</p>
+                    <p id="energyResult" class="text-lg font-semibold text-sky-400">-- Wh</p>
+                </div>
+            </div>
+
+            <!-- Panel de Gráfica -->
+            <div class="md:col-span-2 bg-slate-800 p-6 rounded-2xl shadow-xl flex flex-col justify-center">
+                <h2 class="text-xl font-semibold mb-4 text-emerald-300">Comportamiento Dinámico de Potencia $P(t)$</h2>
+                <div class="relative h-64 w-full">
+                    <canvas id="chargeChart"></canvas>
+                </div>
+                <p class="text-xs text-slate-400 text-center mt-4">El área sombreada bajo la curva representa la energía total calculada mediante la integral definida.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const socInput = document.getElementById('socInput');
+        const capInput = document.getElementById('capInput');
+        const powInput = document.getElementById('powInput');
+
+        const socVal = document.getElementById('socVal');
+        const capVal = document.getElementById('capVal');
+        const powVal = document.getElementById('powVal');
+
+        const timeResult = document.getElementById('timeResult');
+        const energyResult = document.getElementById('energyResult');
+
+        let ctx = document.getElementById('chargeChart').getContext('2d');
+        let chargeChart = new Chart(ctx, {
+            type: 'line',
+            data: { labels: [], datasets: [{ label: 'Potencia de Carga (W)', data: [], borderColor: '#34d399', backgroundColor: 'rgba(52, 211, 153, 0.2)', fill: true, tension: 0.3 }] },
+            options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, grid: { color: '#334155' } }, x: { grid: { color: '#334155' } } } }
+        });
+
+        function updateSimulation() {
+            let soc = parseFloat(socInput.value);
+            let capacity = parseFloat(capInput.value);
+            let maxPower = parseFloat(powInput.value);
+
+            socVal.innerText = soc;
+            capVal.innerText = capacity;
+            powVal.innerText = maxPower;
+
+            let energyNeeded = capacity * ((100 - soc) / 100);
+            
+            // Simulación matemática aproximada del tiempo y curva por tramos
+            let timeCC = (capacity * 0.7 - capacity * (soc / 100)) / maxPower;
+            if (timeCC < 0) timeCC = 0;
+            let timeCV = 1.2; // Tiempo estimado fase de saturación
+            let totalHours = timeCC + timeCV;
+
+            let hours = Math.floor(totalHours);
+            let minutes = Math.round((totalHours - hours) * 60);
+
+            timeResult.innerText = `${hours} h ${minutes} min`;
+            energyResult.innerText = `${energyNeeded.toFixed(1)} Wh`;
+
+            // Generar puntos para la gráfica
+            let labels = [];
+            let data = [];
+            let steps = 20;
+            for (let i = 0; i <= steps; i++) {
+                let t = (totalHours / steps) * i;
+                labels.push(t.toFixed(1) + 'h');
+                let p = t <= (totalHours - 1.2) ? maxPower : maxPower * Math.exp(-1.5 * (t - (totalHours - 1.2)));
+                data.push(Math.max(p, 5));
+            }
+
+            chargeChart.data.labels = labels;
+            chargeChart.data.datasets[0].data = data;
+            chargeChart.update();
+        }
+
+        socInput.addEventListener('input', updateSimulation);
+        capInput.addEventListener('input', updateSimulation);
+        powInput.addEventListener('input', updateSimulation);
+
+        updateSimulation();
+    </script>
+</body>
+</html>
