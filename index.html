@@ -1,125 +1,86 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simulador de Carga - Bici Eléctrica</title>
-    <!-- Tailwind CSS para diseño moderno -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Chart.js para la gráfica interactiva -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulador Interactivo de Carga y Gestión Energética</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body class="bg-slate-900 text-slate-100 font-sans min-h-screen p-6">
-    <div class="max-w-4xl mx-auto">
-        <header class="text-center mb-8">
-            <h1 class="text-3xl font-bold text-emerald-400 mb-2">Simulador de Carga y Cuidado de Batería</h1>
-            <p class="text-slate-400">Modelo de Cálculo Integral aplicado a la Micromovilidad Urbana</p>
-        </header>
-
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <!-- Panel de Controles (Sliders) -->
-            <div class="bg-slate-800 p-6 rounded-2xl shadow-xl flex flex-col justify-between">
-                <div>
-                    <h2 class="text-xl font-semibold mb-4 text-emerald-300">Parámetros</h2>
-                    
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium mb-1">Batería Inicial: <span id="socVal" class="font-bold text-emerald-400">30</span>%</label>
-                        <input type="range" id="socInput" min="10" max="90" value="30" class="w-full accent-emerald-500 cursor-pointer">
-                    </div>
-
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium mb-1">Capacidad Total: <span id="capVal" class="font-bold text-emerald-400">400</span> Wh</label>
-                        <input type="range" id="capInput" min="200" max="800" step="50" value="400" class="w-full accent-emerald-500 cursor-pointer">
-                    </div>
-
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium mb-1">Potencia del Cargador: <span id="powVal" class="font-bold text-emerald-400">120</span> W</label>
-                        <input type="range" id="powInput" min="50" max="300" step="10" value="120" class="w-full accent-emerald-500 cursor-pointer">
-                    </div>
-                </div>
-
-                <div class="bg-slate-900 p-4 rounded-xl border border-slate-700 mt-4">
-                    <p class="text-xs text-slate-400">Tiempo Estimado al 100%:</p>
-                    <p id="timeResult" class="text-2xl font-bold text-emerald-400">-- h -- min</p>
-                    <p class="text-xs text-slate-400 mt-2">Energía Total (Integral):</p>
-                    <p id="energyResult" class="text-lg font-semibold text-sky-400">-- Wh</p>
-                </div>
-            </div>
-
-            <!-- Panel de Gráfica -->
-            <div class="md:col-span-2 bg-slate-800 p-6 rounded-2xl shadow-xl flex flex-col justify-center">
-                <h2 class="text-xl font-semibold mb-4 text-emerald-300">Comportamiento Dinámico de Potencia $P(t)$</h2>
-                <div class="relative h-64 w-full">
-                    <canvas id="chargeChart"></canvas>
-                </div>
-                <p class="text-xs text-slate-400 text-center mt-4">El área sombreada bajo la curva representa la energía total calculada mediante la integral definida.</p>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        const socInput = document.getElementById('socInput');
-        const capInput = document.getElementById('capInput');
-        const powInput = document.getElementById('powInput');
-
-        const socVal = document.getElementById('socVal');
-        const capVal = document.getElementById('capVal');
-        const powVal = document.getElementById('powVal');
-
-        const timeResult = document.getElementById('timeResult');
-        const energyResult = document.getElementById('energyResult');
-
-        let ctx = document.getElementById('chargeChart').getContext('2d');
-        let chargeChart = new Chart(ctx, {
-            type: 'line',
-            data: { labels: [], datasets: [{ label: 'Potencia de Carga (W)', data: [], borderColor: '#34d399', backgroundColor: 'rgba(52, 211, 153, 0.2)', fill: true, tension: 0.3 }] },
-            options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, grid: { color: '#334155' } }, x: { grid: { color: '#334155' } } } }
-        });
-
-        function updateSimulation() {
-            let soc = parseFloat(socInput.value);
-            let capacity = parseFloat(capInput.value);
-            let maxPower = parseFloat(powInput.value);
-
-            socVal.innerText = soc;
-            capVal.innerText = capacity;
-            powVal.innerText = maxPower;
-
-            let energyNeeded = capacity * ((100 - soc) / 100);
-            
-            // Simulación matemática aproximada del tiempo y curva por tramos
-            let timeCC = (capacity * 0.7 - capacity * (soc / 100)) / maxPower;
-            if (timeCC < 0) timeCC = 0;
-            let timeCV = 1.2; // Tiempo estimado fase de saturación
-            let totalHours = timeCC + timeCV;
-
-            let hours = Math.floor(totalHours);
-            let minutes = Math.round((totalHours - hours) * 60);
-
-            timeResult.innerText = `${hours} h ${minutes} min`;
-            energyResult.innerText = `${energyNeeded.toFixed(1)} Wh`;
-
-            // Generar puntos para la gráfica
-            let labels = [];
-            let data = [];
-            let steps = 20;
-            for (let i = 0; i <= steps; i++) {
-                let t = (totalHours / steps) * i;
-                labels.push(t.toFixed(1) + 'h');
-                let p = t <= (totalHours - 1.2) ? maxPower : maxPower * Math.exp(-1.5 * (t - (totalHours - 1.2)));
-                data.push(Math.max(p, 5));
-            }
-
-            chargeChart.data.labels = labels;
-            chargeChart.data.datasets[0].data = data;
-            chargeChart.update();
-        }
-
-        socInput.addEventListener('input', updateSimulation);
-        capInput.addEventListener('input', updateSimulation);
-        powInput.addEventListener('input', updateSimulation);
-
-        updateSimulation();
-    </script>
-</body>
-</html>
+<div class="max-w-5xl mx-auto">
+<h1 class="text-3xl font-bold text-emerald-400 text-center mb-2">Simulador Interactivo de Carga y Gestión Energética</h1>
+<p class="text-center text-slate-400 mb-6">Estimación de tiempo de carga para bicicletas y patinetas eléctricas</p>
+<div class="grid md:grid-cols-3 gap-6">
+<div class="bg-slate-800 p-5 rounded-2xl">
+<button id="oferoBtn" class="w-full bg-emerald-600 p-2 rounded mb-4">Usar configuración Ofero Stareer 3 Lit</button>
+<label>Batería inicial: <span id="socVal">30</span>%</label>
+<input type="range" id="soc" min="0" max="95" value="30" class="w-full">
+<label>Carga objetivo: <span id="targetVal">80</span>%</label>
+<input type="range" id="target" min="10" max="100" value="80" class="w-full">
+<label>Capacidad: <span id="capVal">800</span> Wh</label>
+<input type="range" id="cap" min="200" max="1500" value="800" class="w-full">
+<label>Tipo de cargador</label>
+<select id="power" class="w-full text-black p-2 rounded">
+<option value="84">42V-2A (84W)</option>
+<option value="126">42V-3A (126W)</option>
+<option value="144">48V-3A (144W)</option>
+<option value="164" selected>54.6V-3A (164W)</option>
+<option value="218">54.6V-4A (218W)</option>
+<option value="273">54.6V-5A (273W)</option>
+</select>
+<div class="mt-4 p-3 bg-slate-900 rounded">
+<div class="text-xs">TIEMPO ESTIMADO DE CARGA</div>
+<div id="time" class="text-3xl font-bold text-emerald-400"></div>
+<div id="energy" class="text-sm text-sky-400 mt-2"></div>
+<div id="advice" class="text-sm mt-2"></div>
+</div>
+</div>
+<div class="md:col-span-2 bg-slate-800 p-5 rounded-2xl">
+<canvas id="chart"></canvas>
+</div>
+</div>
+</div>
+<script>
+const soc=document.getElementById('soc');
+const target=document.getElementById('target');
+const cap=document.getElementById('cap');
+const power=document.getElementById('power');
+const chart=new Chart(document.getElementById('chart'),{type:'line',data:{labels:[],datasets:[{label:'Potencia P(t)',data:[],borderColor:'#34d399',backgroundColor:'rgba(52,211,153,.2)',fill:true}]}});
+function update(){
+let s=+soc.value,t=+target.value,c=+cap.value,p=+power.value;
+if(t<=s){t=s+1;target.value=t;}
+document.getElementById('socVal').innerText=s;
+document.getElementById('targetVal').innerText=t;
+document.getElementById('capVal').innerText=c;
+const energy=c*((t-s)/100);
+let time;
+if(t<=80){time=energy/p;}
+else{
+ const e1=c*((Math.max(80,s)-s)/100);
+ const e2=Math.max(0,c*((t-Math.max(80,s))/100));
+ time=(e1/p)+(e2/(p*0.6));
+}
+const h=Math.floor(time); const m=Math.round((time-h)*60);
+document.getElementById('time').innerText=`${h} h ${m} min`;
+document.getElementById('energy').innerText=`Energía aproximada requerida: ${energy.toFixed(1)} Wh`;
+const adv=document.getElementById('advice');
+if(t<80){adv.innerText='Carga eficiente para trayectos cortos.';adv.className='text-green-400';}
+else if(t<=90){adv.innerText='Nivel recomendado para equilibrar autonomía y vida útil.';adv.className='text-green-400';}
+else if(t<100){adv.innerText='Las cargas frecuentes por encima del 90% pueden aumentar el desgaste.';adv.className='text-yellow-400';}
+else{adv.innerText='Las cargas frecuentes al 100% pueden acelerar la degradación de la batería.';adv.className='text-orange-400';}
+let labels=[],data=[]; let steps=30;
+for(let i=0;i<=steps;i++){
+ let x=time*i/steps; labels.push(x.toFixed(1));
+ let sat=time*0.8;
+ let val=x<=sat?p:p*Math.exp(-1.5*(x-sat));
+ data.push(Math.max(val,5));
+}
+chart.data.labels=labels; chart.data.datasets[0].data=data; chart.update();
+}
+[soc,target,cap,power].forEach(e=>e.addEventListener('input',update));
+document.getElementById('oferoBtn').onclick=()=>{cap.value=1152;power.value='164';update();};
+update();
+</script>
+</body></html>
