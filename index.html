@@ -1,86 +1,88 @@
-
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Simulador Interactivo de Carga y Gestión Energética</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Simulador de carga de baterías</title>
+<style>
+:root{--ink:#182230;--muted:#657386;--line:#e3e9f0;--blue:#2563eb;--blue-dark:#1d4ed8;--blue-soft:#eff6ff;--green:#15803d;--green-soft:#f0fdf4;--amber:#b45309;--amber-soft:#fff7ed;--red:#b91c1c;--red-soft:#fef2f2}
+*{box-sizing:border-box}body{margin:0;background:#f4f7fb;color:var(--ink);font:16px/1.5 Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+main{max-width:1080px;margin:0 auto;padding:36px 22px 48px}header{margin-bottom:24px}.eyebrow{color:var(--blue);font-size:.78rem;font-weight:750;letter-spacing:.09em;text-transform:uppercase;margin:0 0 9px}
+h1{font-size:clamp(1.8rem,4vw,2.65rem);line-height:1.12;letter-spacing:-.04em;margin:0 0 12px}.subtitle{font-size:1.08rem;color:var(--muted);max-width:720px;margin:0}
+.layout{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:20px;align-items:start}.card{background:#fff;border:1px solid var(--line);border-radius:20px;padding:24px;box-shadow:0 8px 28px rgba(24,34,48,.045)}
+.card h2{font-size:1.05rem;margin:0 0 5px;letter-spacing:-.015em}.help{color:var(--muted);font-size:.9rem;margin:0 0 22px}.field{margin:0 0 21px}.field-head{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:9px}
+label{font-size:.92rem;font-weight:650}.value{font-size:.9rem;color:var(--blue-dark);font-weight:750;font-variant-numeric:tabular-nums;white-space:nowrap}
+input[type=range]{width:100%;accent-color:var(--blue);cursor:pointer}.scale{display:flex;justify-content:space-between;color:#8a96a6;font-size:.76rem;margin-top:3px}
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:8px}button{border:0;border-radius:11px;padding:11px 16px;font:inherit;font-size:.92rem;font-weight:700;cursor:pointer}.primary{background:var(--blue);color:#fff}.primary:hover{background:var(--blue-dark)}.secondary{background:#eef2f7;color:#334155}.secondary:hover{background:#e2e8f0}
+.result-top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.pill{display:inline-flex;align-items:center;border-radius:999px;padding:5px 10px;font-size:.76rem;font-weight:750;background:var(--blue-soft);color:var(--blue-dark);white-space:nowrap}
+.big-result{font-size:clamp(2rem,4.5vw,3rem);font-weight:800;letter-spacing:-.05em;line-height:1.08;margin:14px 0 7px;font-variant-numeric:tabular-nums}.result-note{margin:0;color:var(--muted);font-size:.9rem}
+.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:22px}.stat{border:1px solid var(--line);border-radius:13px;padding:14px;background:#fbfcfe}.stat .k{color:var(--muted);font-size:.78rem;margin-bottom:5px}.stat .v{font-size:1.15rem;font-weight:750;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.message{padding:12px 14px;border-radius:12px;margin-top:16px;font-size:.88rem;font-weight:600}.message.green{background:var(--green-soft);color:var(--green)}.message.amber{background:var(--amber-soft);color:var(--amber)}.message.red{background:var(--red-soft);color:var(--red)}
+.chart-wrap{margin-top:24px}.chart-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:8px}.chart-head h3{font-size:.98rem;margin:0}.chart-head span{font-size:.78rem;color:var(--muted)}canvas{display:block;width:100%;height:250px}
+.legend{display:flex;gap:18px;flex-wrap:wrap;color:var(--muted);font-size:.8rem;margin-top:8px}.legend i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px}.note{color:var(--muted);font-size:.82rem;margin:16px 0 0}.warning{display:none;background:var(--amber-soft);color:var(--amber);border-radius:12px;padding:12px 14px;margin-top:14px;font-size:.88rem}footer{color:var(--muted);font-size:.8rem;text-align:center;margin-top:22px}
+@media(max-width:800px){main{padding:24px 14px 36px}.layout{grid-template-columns:1fr}.card{padding:20px}.result-card{order:-1}}@media(max-width:440px){.stats{grid-template-columns:1fr 1fr}.card{padding:17px}.result-top{display:block}.pill{margin-top:8px}}
+</style>
 </head>
-<body class="bg-slate-900 text-slate-100 font-sans min-h-screen p-6">
-<div class="max-w-5xl mx-auto">
-<h1 class="text-3xl font-bold text-emerald-400 text-center mb-2">Simulador Interactivo de Carga y Gestión Energética</h1>
-<p class="text-center text-slate-400 mb-6">Estimación de tiempo de carga para bicicletas y patinetas eléctricas</p>
-<div class="grid md:grid-cols-3 gap-6">
-<div class="bg-slate-800 p-5 rounded-2xl">
-<button id="oferoBtn" class="w-full bg-emerald-600 p-2 rounded mb-4">Usar configuración Ofero Stareer 3 Lit</button>
-<label>Batería inicial: <span id="socVal">30</span>%</label>
-<input type="range" id="soc" min="0" max="95" value="30" class="w-full">
-<label>Carga objetivo: <span id="targetVal">80</span>%</label>
-<input type="range" id="target" min="10" max="100" value="80" class="w-full">
-<label>Capacidad: <span id="capVal">800</span> Wh</label>
-<input type="range" id="cap" min="200" max="1500" value="800" class="w-full">
-<label>Tipo de cargador</label>
-<select id="power" class="w-full text-black p-2 rounded">
-<option value="84">42V-2A (84W)</option>
-<option value="126">42V-3A (126W)</option>
-<option value="144">48V-3A (144W)</option>
-<option value="164" selected>54.6V-3A (164W)</option>
-<option value="218">54.6V-4A (218W)</option>
-<option value="273">54.6V-5A (273W)</option>
-</select>
-<div class="mt-4 p-3 bg-slate-900 rounded">
-<div class="text-xs">TIEMPO ESTIMADO DE CARGA</div>
-<div id="time" class="text-3xl font-bold text-emerald-400"></div>
-<div id="energy" class="text-sm text-sky-400 mt-2"></div>
-<div id="advice" class="text-sm mt-2"></div>
-</div>
-</div>
-<div class="md:col-span-2 bg-slate-800 p-5 rounded-2xl">
-<canvas id="chart"></canvas>
-</div>
-</div>
-</div>
+<body>
+<main>
+<header><p class="eyebrow">Herramienta de estimación</p><h1>Simulador de tiempo de carga</h1><p class="subtitle">Calcula el tiempo estimado de carga de tu bicicleta o patineta eléctrica.</p><p class="subtitle" style="font-size:.94rem;margin-top:7px">Conoce cuánto tiempo podría tardar tu batería en alcanzar el nivel de carga deseado.</p></header>
+<div class="layout">
+<section class="card">
+<h2>Configura tu batería</h2><p class="help">Ajusta los valores para calcular una estimación personalizada.</p>
+<div class="field"><div class="field-head"><label for="initial">Carga inicial</label><span class="value" id="initialValue">30 %</span></div><input id="initial" type="range" min="0" max="99" step="1" value="30"><div class="scale"><span>0 %</span><span>99 %</span></div></div>
+<div class="field"><div class="field-head"><label for="target">Carga objetivo</label><span class="value" id="targetValue">80 %</span></div><input id="target" type="range" min="1" max="100" step="1" value="80"><div class="scale"><span>1 %</span><span>100 %</span></div></div>
+<div class="field"><div class="field-head"><label for="capacity">Capacidad de la batería</label><span class="value" id="capacityValue">1152 Wh</span></div><input id="capacity" type="range" min="200" max="1500" step="1" value="1152"><div class="scale"><span>200 Wh</span><span>1500 Wh</span></div></div>
+<div class="field"><div class="field-head"><label for="power">Potencia del cargador</label><span class="value" id="powerValue">164 W</span></div><input id="power" type="range" min="50" max="500" step="1" value="164"><div class="scale"><span>50 W</span><span>500 W</span></div></div>
+<div class="actions"><button class="secondary" id="reset" type="button">Restablecer</button></div>
+<p class="note">La constante de disminución de potencia forma parte del modelo matemático y se mantiene fija para esta simulación.</p>
+</section>
+<section class="card result-card" aria-live="polite">
+<div class="result-top"><div><h2>Tiempo estimado de carga</h2><p class="help" style="margin:4px 0 0">Desde el nivel actual hasta tu objetivo.</p></div><span class="pill" id="casePill">Potencia constante</span></div>
+<div class="big-result" id="timeResult">2 h 55 min</div><p class="result-note" id="resultDescription">Estimación basada en la capacidad y potencia seleccionadas.</p>
+<div class="stats"><div class="stat"><div class="k">Energía estimada necesaria</div><div class="v" id="energyResult">576 Wh</div></div><div class="stat"><div class="k">Tiempo en fase constante</div><div class="v" id="constantResult">2 h 55 min</div></div><div class="stat"><div class="k">Tiempo en fase decreciente</div><div class="v" id="decayResult">0 min</div></div><div class="stat"><div class="k">Potencia estimada al inicio</div><div class="v" id="startPowerResult">164 W</div></div></div>
+<div class="message green" id="guidance">Carga eficiente para trayectos cortos.</div><div class="warning" id="warning"></div>
+<div class="chart-wrap"><div class="chart-head"><h3>Potencia durante la carga</h3><span id="chartRange">0–5 h</span></div><canvas id="chart" role="img" aria-label="Gráfica de potencia estimada a lo largo del tiempo"></canvas><div class="legend"><span><i style="background:#2563eb"></i>Potencia estimada</span><span><i style="background:#cbd5e1"></i>Transición al 80 %</span></div></div>
+<p class="note">Modelo simplificado: la potencia se considera constante hasta el 80 % y disminuye exponencialmente después. Los resultados son orientativos; el tiempo real depende de la batería, el cargador, la temperatura y las pérdidas energéticas.</p>
+</section></div><footer>Estimación educativa mediante un modelo matemático de potencia y cálculo integral.</footer>
+</main>
 <script>
-const soc=document.getElementById('soc');
-const target=document.getElementById('target');
-const cap=document.getElementById('cap');
-const power=document.getElementById('power');
-const chart=new Chart(document.getElementById('chart'),{type:'line',data:{labels:[],datasets:[{label:'Potencia P(t)',data:[],borderColor:'#34d399',backgroundColor:'rgba(52,211,153,.2)',fill:true}]}});
-function update(){
-let s=+soc.value,t=+target.value,c=+cap.value,p=+power.value;
-if(t<=s){t=s+1;target.value=t;}
-document.getElementById('socVal').innerText=s;
-document.getElementById('targetVal').innerText=t;
-document.getElementById('capVal').innerText=c;
-const energy=c*((t-s)/100);
-let time;
-if(t<=80){time=energy/p;}
-else{
- const e1=c*((Math.max(80,s)-s)/100);
- const e2=Math.max(0,c*((t-Math.max(80,s))/100));
- time=(e1/p)+(e2/(p*0.6));
+(() => {
+const K=0.20,$=id=>document.getElementById(id);
+const e={s:$('initial'),q:$('target'),c:$('capacity'),p:$('power'),sv:$('initialValue'),qv:$('targetValue'),cv:$('capacityValue'),pv:$('powerValue'),time:$('timeResult'),desc:$('resultDescription'),energy:$('energyResult'),constant:$('constantResult'),decay:$('decayResult'),ps:$('startPowerResult'),guidance:$('guidance'),warning:$('warning'),pill:$('casePill'),canvas:$('chart'),range:$('chartRange')};
+const fmt=(n,d=1)=>n.toLocaleString('es-CO',{maximumFractionDigits:d});
+function dur(h,precise=false){if(!Number.isFinite(h)||h<0)return'—';let sec=Math.round(h*3600),hh=Math.floor(sec/3600),mm=Math.floor(sec%3600/60),ss=sec%60;if(precise){if(hh)return`${hh} h ${mm} min`;if(mm)return`${mm} min ${ss} s`;return`${ss} s`;}let mins=Math.round(h*60),H=Math.floor(mins/60),M=mins%60;return H&&M?`${H} h ${M} min`:H?`${H} h`:`${M} min`;}
+function message(level,text){e.guidance.className='message '+level;e.guidance.textContent=text;}
+function invalid(msg,s,q,c,p){e.time.textContent='No disponible';e.desc.textContent='El modelo no permite estimar un tiempo válido para estos valores.';e.energy.textContent='—';e.constant.textContent='—';e.decay.textContent='—';e.ps.textContent='—';e.pill.textContent='Fuera del rango del modelo';e.warning.style.display='block';e.warning.textContent=msg;message('amber','Prueba con un porcentaje objetivo más bajo.');draw({s,q,c,p,T:1,t1:null,valid:false});}
+function calc(){
+let s=+e.s.value,q=+e.q.value,c=+e.c.value,p=+e.p.value;
+e.sv.textContent=s+' %';e.qv.textContent=q+' %';e.cv.textContent=c+' Wh';e.pv.textContent=p+' W';
+if(q<=s){e.time.textContent='Objetivo alcanzado';e.desc.textContent='Selecciona un porcentaje objetivo mayor que la carga inicial.';e.energy.textContent='0 Wh';e.constant.textContent='—';e.decay.textContent='—';e.ps.textContent='—';e.pill.textContent='Revisa los porcentajes';e.warning.style.display='block';e.warning.textContent='El objetivo debe ser mayor que el porcentaje inicial para estimar un tiempo de carga positivo.';message('amber','Elige un objetivo superior a la carga actual.');draw({s,q,c,p,T:1,t1:null,valid:false});return;}
+e.warning.style.display='none';
+const E=c*(q-s)/100;let T,t1=null,tc=0,td=0,Ps=p,label='';
+if(q<=80){T=E/p;tc=T;label='Potencia constante';}
+else if(s<80&&q>80){t1=c*(80-s)/(100*p);tc=t1;const after=E-p*t1,arg=1-K*after/p;if(!(arg>0))return invalid('Con estos parámetros, el modelo exponencial no alcanza ese objetivo en un tiempo finito. Prueba un objetivo más bajo.',s,q,c,p);T=t1-Math.log(arg)/K;td=T-t1;label='Dos fases de carga';}
+else{Ps=p-K*c*(s-80)/100;const arg=1-K*E/Ps;if(!(Ps>0)||!(arg>0)||!Number.isFinite(arg))return invalid('El modelo no produce un tiempo real y finito para este objetivo con los parámetros seleccionados. Prueba un objetivo más bajo.',s,q,c,p);T=-Math.log(arg)/K;td=T;label='Potencia decreciente';}
+if(!Number.isFinite(T)||T<0)return invalid('No fue posible obtener un tiempo válido con esta combinación de parámetros.',s,q,c,p);
+e.time.textContent=dur(T,true);e.desc.textContent=`Tiempo aproximado: ${fmt(T,2)} horas (${dur(T)}).`;e.energy.textContent=fmt(E,1)+' Wh';e.constant.textContent=dur(tc);e.decay.textContent=dur(td);e.ps.textContent=fmt(Ps,1)+' W';e.pill.textContent=label;
+if(q<=80)message('green','Carga eficiente para trayectos cortos.');else if(q<=90)message('green','Nivel recomendado para equilibrar autonomía y vida útil.');else if(q<100)message('amber','Las cargas frecuentes por encima del 90% pueden aumentar el desgaste.');else message('red','Las cargas frecuentes al 100% pueden acelerar la degradación de la batería.');
+draw({s,q,c,p,T,t1,Ps,valid:true});
 }
-const h=Math.floor(time); const m=Math.round((time-h)*60);
-document.getElementById('time').innerText=`${h} h ${m} min`;
-document.getElementById('energy').innerText=`Energía aproximada requerida: ${energy.toFixed(1)} Wh`;
-const adv=document.getElementById('advice');
-if(t<80){adv.innerText='Carga eficiente para trayectos cortos.';adv.className='text-green-400';}
-else if(t<=90){adv.innerText='Nivel recomendado para equilibrar autonomía y vida útil.';adv.className='text-green-400';}
-else if(t<100){adv.innerText='Las cargas frecuentes por encima del 90% pueden aumentar el desgaste.';adv.className='text-yellow-400';}
-else{adv.innerText='Las cargas frecuentes al 100% pueden acelerar la degradación de la batería.';adv.className='text-orange-400';}
-let labels=[],data=[]; let steps=30;
-for(let i=0;i<=steps;i++){
- let x=time*i/steps; labels.push(x.toFixed(1));
- let sat=time*0.8;
- let val=x<=sat?p:p*Math.exp(-1.5*(x-sat));
- data.push(Math.max(val,5));
+function draw(d){
+const cv=e.canvas,r=cv.getBoundingClientRect();if(!r.width)return;const ratio=window.devicePixelRatio||1;cv.width=Math.round(r.width*ratio);cv.height=250*ratio;const xctx=cv.getContext('2d');xctx.setTransform(ratio,0,0,ratio,0,0);
+const W=r.width,H=250,pad={l:48,r:14,t:16,b:35},pw=W-pad.l-pad.r,ph=H-pad.t-pad.b;xctx.clearRect(0,0,W,H);
+const total=d.valid?Math.max(d.T*1.12,.5):1,maxP=Math.max(d.p,d.Ps||d.p)*1.08,X=t=>pad.l+t/total*pw,Y=p=>pad.t+ph-p/maxP*ph;
+xctx.font='11px system-ui';xctx.fillStyle='#748195';xctx.strokeStyle='#e7ecf2';xctx.lineWidth=1;
+for(let i=0;i<=4;i++){let p=maxP*i/4,yy=Y(p);xctx.beginPath();xctx.moveTo(pad.l,yy);xctx.lineTo(W-pad.r,yy);xctx.stroke();xctx.fillText(Math.round(p)+' W',3,yy+4);}
+for(let i=0;i<=4;i++){let t=total*i/4,xx=X(t);xctx.beginPath();xctx.moveTo(xx,pad.t);xctx.lineTo(xx,pad.t+ph);xctx.stroke();xctx.fillText(fmt(t,1)+' h',xx-13,H-11);}
+if(d.valid){xctx.strokeStyle='#2563eb';xctx.lineWidth=2.8;xctx.lineJoin='round';xctx.beginPath();let n=180;for(let i=0;i<=n;i++){let t=total*i/n,p;if(d.t1!==null){p=t<=d.t1?d.p:d.p*Math.exp(-K*(t-d.t1));}else if(d.s>=80){p=d.Ps*Math.exp(-K*t);}else{p=d.p;}if(i===0)xctx.moveTo(X(t),Y(p));else xctx.lineTo(X(t),Y(p));}xctx.stroke();
+if(d.t1!==null&&d.t1<=total){xctx.save();xctx.setLineDash([4,4]);xctx.strokeStyle='#94a3b8';xctx.lineWidth=1.4;xctx.beginPath();xctx.moveTo(X(d.t1),pad.t);xctx.lineTo(X(d.t1),pad.t+ph);xctx.stroke();xctx.restore();}
+let pe=d.t1!==null?(d.T<=d.t1?d.p:d.p*Math.exp(-K*(d.T-d.t1))):(d.s>=80?d.Ps*Math.exp(-K*d.T):d.p);xctx.fillStyle='#2563eb';xctx.beginPath();xctx.arc(X(d.T),Y(pe),4,0,Math.PI*2);xctx.fill();
+}else{xctx.fillStyle='#8a96a6';xctx.font='13px system-ui';xctx.fillText('Ajusta los valores para mostrar una estimación válida.',pad.l+4,pad.t+ph/2);}
+e.range.textContent=`0–${fmt(total,1)} h`;
 }
-chart.data.labels=labels; chart.data.datasets[0].data=data; chart.update();
-}
-[soc,target,cap,power].forEach(e=>e.addEventListener('input',update));
-document.getElementById('oferoBtn').onclick=()=>{cap.value=1152;power.value='164';update();};
-update();
+['initial','target','capacity','power'].forEach(id=>$(id).addEventListener('input',()=>{if(id==='initial'){let s=+e.s.value;e.q.min=String(Math.min(100,s+1));if(+e.q.value<=s&&s<100)e.q.value=String(s+1);if(s===100)e.q.value='100';}calc();}));
+$('reset').addEventListener('click',()=>{e.s.value=30;e.q.value=80;e.q.min='1';e.c.value=1152;e.p.value=164;calc();});
+window.addEventListener('resize',calc);calc();
+})();
 </script>
 </body></html>
